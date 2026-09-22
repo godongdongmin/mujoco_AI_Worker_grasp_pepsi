@@ -1,0 +1,5 @@
+<mujoco model="AI Worker SH5 workspace">
+  <include file="../vendor/robotis_mujoco_menagerie/robotis_ffw/scene_ffw_sh5.xml"/>
+  <compiler meshdir="../vendor/robotis_mujoco_menagerie/robotis_ffw/assets"/>
+  <visual><global offwidth="800" offheight="600"/></visual>
+</mujoco>

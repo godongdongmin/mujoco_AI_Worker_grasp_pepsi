@@ -1,0 +1,25 @@
+{
+  "verified_date": "2026-09-22",
+  "python": "3.12.4",
+  "mujoco": "3.13.0",
+  "integrated_gui": "PySide6-Essentials 6.8.3 / Qt QOpenGLWidget; isolated project venv",
+  "qt_documentation": "https://doc.qt.io/qtforpython-6/PySide6/QtOpenGLWidgets/QOpenGLWidget.html",
+  "model_repository": "https://github.com/ROBOTIS-GIT/robotis_mujoco_menagerie",
+  "model_commit": "d8344c0dbe7a00208d0301111523dde65efc174a",
+  "model_subdirectory": "robotis_ffw",
+  "model_license": "Apache-2.0; see vendor/robotis_mujoco_menagerie/robotis_ffw/LICENSE",
+  "upstream_model_modified": false,
+  "runtime_hand_collision_adjustment": "Fixed-base IK scene only: exclude palm vs finger proximal mounting links 6,10,14,18 on each hand to prevent convex-hull overlap from splaying straight fingers. Other collision pairs remain enabled.",
+  "simulation_documentation": "https://docs.robotis.com/docs/systems/aiworker/simulation/",
+  "mujoco_python_documentation": "https://mujoco.readthedocs.io/en/stable/python.html",
+  "ik_documentation": "https://mujoco.readthedocs.io/en/stable/programming/simulation.html#coordinate-frames-and-transformations",
+  "pepsi_logo_source": "https://www.pepsico.com/en/media",
+  "pepsi_logo_asset": "https://digitalassets.pepsico.com/transform/47a5ae69-928c-44bd-b3cf-eab35bdc943e/pepsi-logo-fullcolor-RGB?q=90&w=1024",
+  "scene_asset_notes": "assets/pepsi/SOURCE.md",
+  "scope": "Fixed-base ROBOTIS SH5, dual-arm IK, integrated Qt controls, table and dynamic Pepsi cans. Grasp and lift automation is not implemented.",
+  "ui_units": {
+    "position": "m",
+    "rotation": "rad",
+    "hand_preset": "percent"
+  }
+}

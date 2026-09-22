@@ -1,0 +1,13 @@
+.venv/
+vendor/
+__pycache__/
+outputs/
+MUJOCO_LOG.TXT
+*.py[cod]
+*.log
+*.tmp
+.env
+.env.*
+.pytest_cache/
+.DS_Store
+Thumbs.db
