@@ -26,6 +26,13 @@ Windows의 현재 프로젝트 폴더를 WSL에서 열어도 됩니다. Linux용
 
 이 PC의 설치 완료 후에는 Windows에서 **`run_ros2.cmd`**로 ROS 연동 GUI를 실행할 수 있습니다. `run_ik.cmd`는 기존 Windows 앱을 실행합니다. 관리자 설치와 사용자 환경 구성이 분리된 경우 `setup_jazzy.sh --system-only` / `--env-only`를 사용할 수 있습니다.
 
+## 노드 연결도
+
+- Windows: **`run_rqt_graph.cmd`**. Ubuntu: `bash ros2/graph.sh`.
+- `run_ros2.cmd`도 실행해야 `ai_worker_bridge`가 표시됩니다. 나중에 실행했다면 연결도에서 새로고침합니다.
+- 토픽까지 보려면 상단을 **Nodes/Topics (all)**로 설정하고 **Dead sinks / Leaf topics** 숨기기를 해제합니다. 현재 외부 구독자가 없는 상태 토픽도 표시됩니다.
+- 별도 제어 노드는 추가하지 않습니다. MuJoCo·IK·GUI는 현재 `ai_worker_bridge` 내부에 있습니다.
+
 ## 인터페이스
 
 기본 namespace 기준입니다. 위치 m, 회전 rad, ROS quaternion 순서 **x,y,z,w**.

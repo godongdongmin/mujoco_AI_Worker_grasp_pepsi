@@ -34,7 +34,7 @@ if ! dpkg-query -W -f='${Status}' ros2-apt-source 2>/dev/null | grep -q 'install
     "${privilege[@]}" dpkg -i outputs/ros2-apt-source.deb
 fi
 "${privilege[@]}" apt-get update
-"${privilege[@]}" apt-get install -y ros-jazzy-ros-base ros-jazzy-tf2-ros ros-jazzy-tf2-msgs \
+"${privilege[@]}" apt-get install -y ros-jazzy-ros-base ros-jazzy-tf2-ros ros-jazzy-tf2-msgs ros-jazzy-rqt-graph \
     libgl1 libegl1 libglfw3 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 \
     libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1
 fi
