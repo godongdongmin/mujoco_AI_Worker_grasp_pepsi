@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
+import os
+from pathlib import Path
+import subprocess
 import sys
 import time
 
@@ -30,6 +34,9 @@ def build_node_class():
             self.adapter = SessionAdapter(session)
             self.last_error_log = float('-inf')
             self.state_phase = 0.0
+            self.last_tick = time.monotonic()
+            self.accumulator = 0.0
+            self.dropped_wall_seconds = 0.0
             # Volatile depth-one setpoints: no historical command replay.
             qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                              durability=DurabilityPolicy.VOLATILE)
@@ -92,9 +99,21 @@ def build_node_class():
             return response
 
         def advance(self):
-            if not self.session.paused:
-                self.session.tick()
-            self.state_phase += self.session.controller.dt
+            now = time.monotonic()
+            elapsed, self.last_tick = now - self.last_tick, now
+            if self.session.paused:
+                self.accumulator = 0.0
+            else:
+                # GUI rendering can delay ROS timers. Integrate fixed steps to
+                # catch up, capped at 100 ms so a window stall cannot cause an
+                # unbounded simulation burst. This is soft real-time pacing.
+                pending = self.accumulator + elapsed
+                self.dropped_wall_seconds += max(0.0, pending - .1)
+                self.accumulator = min(.1, pending)
+                while self.accumulator + 1e-10 >= self.session.controller.dt:
+                    self.session.tick()
+                    self.accumulator -= self.session.controller.dt
+            self.state_phase += elapsed
             if self.state_phase >= .02 - 1e-10:
                 self.state_phase = 0.0
                 self.publish_state()
@@ -133,6 +152,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--gui', action='store_true', help='Show the integrated Qt workspace')
     parser.add_argument('--duration', type=float, default=0, help='Wall seconds; 0 runs until stopped')
+    parser.add_argument('--ui-screenshot', type=Path, help='Save the GUI before closing; requires --gui')
+    parser.add_argument('--report', type=Path, default=Path('outputs/ros2_run.json'))
     try:
         import rclpy
         from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
@@ -143,19 +164,45 @@ def main(argv=None):
     args = parser.parse_args(remove_ros_args(args=ros_argv)[1:])
     if not math.isfinite(args.duration) or args.duration < 0:
         parser.error('--duration must be finite and nonnegative')
+    if args.ui_screenshot and not args.gui:
+        parser.error('--ui-screenshot requires --gui')
     from run_ik import Session
     rclpy.init(args=ros_argv[1:])
-    node, executor = None, None
+    node, executor, window = None, None, None
+    session, run_start, completed = None, None, False
+    renderer_name = None
     try:
         session = Session()
         node = build_node_class()(session)
         executor = SingleThreadedExecutor()
         executor.add_node(node)
+        run_start = time.monotonic()
         if args.gui:
+            if Path('/dev/dxg').exists():
+                # Limit these defaults to the WSL GUI process; respect user
+                # overrides and leave native Linux/Windows rendering untouched.
+                os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
+                os.environ.setdefault('GALLIUM_DRIVER', 'd3d12')
+                # Prefer the discrete adapter when WSL exposes an NVIDIA GPU.
+                # Users may select another GPU explicitly via the Mesa variable.
+                if 'MESA_D3D12_DEFAULT_ADAPTER_NAME' not in os.environ:
+                    try:
+                        gpu = subprocess.run(
+                            ['/usr/lib/wsl/lib/nvidia-smi', '--query-gpu=name', '--format=csv,noheader'],
+                            capture_output=True, text=True, timeout=2, check=False)
+                        if gpu.returncode == 0 and 'NVIDIA' in gpu.stdout:
+                            os.environ['MESA_D3D12_DEFAULT_ADAPTER_NAME'] = 'NVIDIA'
+                    except (OSError, subprocess.TimeoutExpired):
+                        pass
             from PySide6.QtCore import QTimer
             from integrated_gui import RobotWorkspace, make_app
             app = make_app()
-            window = RobotWorkspace(session, duration=args.duration)
+            # WSL's D3D12 translation is costly for extra rendering passes.
+            # These settings affect only lighting/reflections, never contacts.
+            if Path('/dev/dxg').exists():
+                session.model.light_castshadow[:] = False
+                session.model.mat_reflectance[:] = 0
+            window = RobotWorkspace(session, duration=args.duration, screenshot=args.ui_screenshot)
             window.physics_timer.stop()  # The ROS timer exclusively advances physics.
             timer = QTimer(window)
 
@@ -177,6 +224,16 @@ def main(argv=None):
             timer.timeout.connect(pump)
             timer.start(2)
             window.show()
+            if window.viewport.render_context is not None:
+                from OpenGL import GL
+                window.viewport.makeCurrent()
+                renderer_name = GL.glGetString(GL.GL_RENDERER).decode('utf-8', errors='replace')
+                window.viewport.doneCurrent()
+                node.get_logger().info(f'OpenGL renderer: {renderer_name}')
+            # Model/context loading is initialization, not a missed control tick.
+            node.last_tick = time.monotonic()
+            node.accumulator = 0.0
+            run_start = node.last_tick
             app.exec()
             timer.stop()
             if window.failure:
@@ -185,8 +242,9 @@ def main(argv=None):
             start = time.monotonic()
             while rclpy.ok() and (not args.duration or time.monotonic() - start < args.duration):
                 executor.spin_once(timeout_sec=.05)
+        completed = True
     except (KeyboardInterrupt, ExternalShutdownException):
-        pass
+        completed = True
     finally:
         if executor is not None:
             executor.shutdown()
@@ -194,6 +252,23 @@ def main(argv=None):
             node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+    if completed and session is not None and run_start is not None:
+        wall_seconds = time.monotonic() - run_start
+        report = {
+            'gui': bool(args.gui), 'wall_seconds': wall_seconds,
+            'simulation_seconds': session.data.time - session.start_sim,
+            'control_cycles': session.cycles,
+            'average_control_hz_wall_including_pauses': session.cycles / max(wall_seconds, 1e-9),
+            'rendered_frames': window.viewport.frames if window is not None else 0,
+            'opengl_renderer': renderer_name,
+            'dropped_wall_seconds': node.dropped_wall_seconds,
+            'arm_modes': session.joint_controls.arm_modes,
+            'warnings': session.data.warning.number.tolist(),
+            'final_state': node.adapter.snapshot(),
+        }
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(report, indent=2), encoding='utf-8')
+        print(f'ROS 2 run finished: {session.cycles} control cycles; report: {args.report}')
 
 
 if __name__ == '__main__':

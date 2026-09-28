@@ -1,9 +1,10 @@
-# ROS 2 연동 — 개발 중
+# ROS 2 연동
 
 - 대상: WSL2 / Ubuntu 24.04 / ROS 2 Jazzy / Python 3.12.
 - `main`의 Windows 앱은 유지. 이 브랜치는 동일한 `Session`을 사용하는 별도 ROS 실행 파일을 추가합니다.
 - 구현: 상태 발행, 손·관절 목표 수신, 초기화·일시정지·현재 자세 유지 서비스.
-- 검증: Windows에서 어댑터의 실제 MuJoCo 검증 통과. **ROS 통신·WSLg GUI 검증은 아직 미완료**입니다.
+- 검증(2026-09-28): 어댑터 6개 테스트, 실제 ROS 토픽·서비스·TF·clock, WSLg GUI 및 79개 제어 위젯 통과.
+- 이 PC의 GUI 측정: NVIDIA RTX 5060, 평균 제어 99.2 Hz / 약 29 fps. 하드 실시간 보장은 아닙니다.
 - ros2_control, MoveIt, 전체 로봇 URDF/TF, 궤적 Action, 충돌 회피는 포함하지 않습니다.
 
 ## 설치
@@ -22,6 +23,8 @@ bash ros2/run.sh --gui
 ```
 
 Windows의 현재 프로젝트 폴더를 WSL에서 열어도 됩니다. Linux용 `.venv_ros2`와 Windows용 `.venv`는 분리되어 있습니다. GUI 없이 실행하려면 `--gui`를 생략합니다. `--duration 10`은 벽시계 기준 10초 후 종료합니다.
+
+이 PC의 설치 완료 후에는 Windows에서 **`run_ros2.cmd`**로 ROS 연동 GUI를 실행할 수 있습니다. `run_ik.cmd`는 기존 Windows 앱을 실행합니다. 관리자 설치와 사용자 환경 구성이 분리된 경우 `setup_jazzy.sh --system-only` / `--env-only`를 사용할 수 있습니다.
 
 ## 인터페이스
 
@@ -42,6 +45,7 @@ Windows의 현재 프로젝트 폴더를 WSL에서 열어도 됩니다. Linux용
 
 - 100 Hz 제어 / 500 Hz 물리, 상태 발행 목표 50 Hz. PC 성능에 따라 느려질 수 있습니다.
 - ROS 콜백·GUI·물리는 같은 스레드에서 실행합니다. 타이머는 steady clock을 사용하므로 pause 중에도 서비스를 받습니다.
+- GUI 지연 시 고정 시간 간격으로 최대 100 ms를 따라잡습니다. 그 이상의 지연은 누적하지 않고 보고서에 기록합니다.
 - 목표는 도착 시 적용하고 유지합니다. timestamp 예약 실행·자동 만료는 없습니다. GUI와 ROS 입력은 같은 목표를 변경합니다.
 - 관절 명령은 이름·범위·유한값을 전체 검사한 후 적용합니다. 해당 팔은 JOINT 모드로, 손 자세 명령을 받으면 IK 모드로 바뀝니다.
 - 명령 QoS는 Reliable / Volatile / KeepLast(1). 무효한 명령은 거부하고 로그를 남깁니다.
@@ -72,5 +76,9 @@ python validate_ros2_adapter.py
 ROS_DOMAIN_ID=73 python validate_ros2_live.py
 bash ros2/run.sh --gui --duration 10
 ```
+
+`--ui-screenshot outputs/ros2_workspace.png`로 GUI를 저장할 수 있습니다. 실행 보고서 `outputs/ros2_run.json`에는 제어 횟수·시뮬레이션 시간·렌더링 프레임·최종 상태가 기록됩니다. 두 파일 모두 Git에서 제외합니다.
+
+WSLg GUI에서는 X11/D3D12를 사용하고, NVIDIA GPU가 있으면 우선 선택합니다. 그림자·반사는 성능을 위해 끄며 충돌·물리는 그대로입니다. GPU 선택은 `MESA_D3D12_DEFAULT_ADAPTER_NAME`으로 변경할 수 있습니다. [WSLg GPU 설정](https://github.com/microsoft/wslg/wiki/GPU-selection-in-WSLg)
 
 공식 설치 문서: [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html).

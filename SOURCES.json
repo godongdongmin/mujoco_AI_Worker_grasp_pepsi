@@ -21,5 +21,17 @@
     "position": "m",
     "rotation": "rad",
     "hand_preset": "percent"
+  },
+  "ros2_validation": {
+    "date": "2026-09-28",
+    "platform": "WSL2 / Ubuntu 24.04 / ROS 2 Jazzy",
+    "python": "3.12.3",
+    "middleware": "rmw_fastrtps_cpp",
+    "renderer": "D3D12 (NVIDIA GeForce RTX 5060)",
+    "tests": "6 adapter cases; actual DDS topics/services/TF/clock; integrated Qt widgets; Windows launcher to WSL GUI",
+    "gui_control_hz_wall_average": 99.223,
+    "gui_frames_per_second_approx": 29,
+    "rendering_notes": "WSL process only: default to xcb and Gallium D3D12, prefer detected NVIDIA adapter, disable shadow/reflection passes. No change to collision or physical dynamics.",
+    "wslg_gpu_documentation": "https://github.com/microsoft/wslg/wiki/GPU-selection-in-WSLg"
   }
 }
