@@ -1,4 +1,5 @@
 .venv/
+.venv_ros2/
 vendor/
 __pycache__/
 outputs/

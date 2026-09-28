@@ -2,6 +2,8 @@
 
 ROBOTIS FFW-SH5 양팔·다지 손을 조작하는 고정 베이스 시뮬레이터.
 
+`main`: 기존 Windows MuJoCo 앱. `feature/ros2-integration`: [ROS 2 연동](ros2/README.md) 개발 브랜치.
+
 ## 주요 기능
 
 - Qt 통합 창: 중앙 3D 화면, 좌우 손 제어, 하단 63개 관절 탭
