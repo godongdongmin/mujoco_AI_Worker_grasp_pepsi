@@ -29,9 +29,12 @@ Windows의 현재 프로젝트 폴더를 WSL에서 열어도 됩니다. Linux용
 ## 노드 연결도
 
 - Windows: **`run_rqt_graph.cmd`**. Ubuntu: `bash ros2/graph.sh`.
+- 명령창은 시작 안내 이후 조용한 것이 정상이며, 별도 **Node Graph** 창에서 확인합니다.
 - `run_ros2.cmd`도 실행해야 `ai_worker_bridge`가 표시됩니다. 나중에 실행했다면 연결도에서 새로고침합니다.
 - 토픽까지 보려면 상단을 **Nodes/Topics (all)**로 설정하고 **Dead sinks / Leaf topics** 숨기기를 해제합니다. 현재 외부 구독자가 없는 상태 토픽도 표시됩니다.
 - 별도 제어 노드는 추가하지 않습니다. MuJoCo·IK·GUI는 현재 `ai_worker_bridge` 내부에 있습니다.
+
+창이 검거나 제목에 `[WARN:COPY MODE]`가 있으면 WSLg 표시 오류일 수 있습니다. WSL 작업을 저장·종료한 뒤 Windows 터미널에서 `wsl --shutdown`을 실행하고 두 실행 파일을 다시 시작합니다. 이 명령은 실행 중인 모든 WSL 프로그램을 종료합니다. [관련 WSLg 오류](https://github.com/microsoft/openvmm/issues/4274)
 
 ## 인터페이스
 
